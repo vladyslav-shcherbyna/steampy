@@ -131,15 +131,14 @@ class SteamMarket:
 
     @login_required
     def create_buy_order(
-            self,
-            market_name: str,
-            price_single_item: str,
-            quantity: int,
-            game: GameOptions,
-            currency: Currency = Currency.USD,
+        self,
+        market_name: str,
+        price_single_item: str,
+        quantity: int,
+        game: GameOptions,
+        currency: Currency = Currency.USD,
     ) -> dict:
         data = {
-            # 'sessionid': self._session.cookies.get_dict("steamcommunity.com")['sessionid'],
             'sessionid': self._session_id,
             'currency': currency.value,
             'appid': game.app_id,
@@ -147,6 +146,18 @@ class SteamMarket:
             'price_total': str(Decimal(price_single_item) * Decimal(quantity)),
             'quantity': quantity,
         }
+        headers = {
+            'Referer': f'{SteamUrl.COMMUNITY_URL}/market/listings/{game.app_id}/{urllib.parse.quote(market_name)}',
+        }
+
+        response = self._session.post(f'{SteamUrl.COMMUNITY_URL}/market/createbuyorder/', data, headers=headers).json()
+
+        if (success := response.get('success')) != 1:
+            raise ApiException(
+                f'There was a problem creating the order. Are you using the right currency? success: {success}',
+            )
+
+        return response
 
     @login_required
     def buy_item(

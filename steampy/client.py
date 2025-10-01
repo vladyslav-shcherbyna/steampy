@@ -280,15 +280,15 @@ class SteamClient:
         html = self._session.get(f'https://steamcommunity.com/trade/{trade_id}/receipt').content.decode()
         return [json.loads(item) for item in texts_between(html, 'oItem = ', ';\r\n\toItem')]
 
-    @login_required  # fix trade offer
+    @login_required
     def accept_trade_offer(self, trade_offer_id: str) -> dict:
-        trade = self.get_trade_offer(trade_offer_id)
+        trade = self.get_trade_offer(trade_offer_id, use_webtoken=True)
         trade_offer_state = TradeOfferState(trade['response']['offer']['trade_offer_state'])
         if trade_offer_state is not TradeOfferState.Active:
             raise ApiException(f'Invalid trade offer state: {trade_offer_state.name} ({trade_offer_state.value})')
 
         partner = self._fetch_trade_partner_id(trade_offer_id)
-        session_id = self._session.cookies.get_dict("steamcommunity.com")['sessionid']
+        session_id = self._get_session_id()
         accept_url = f'{SteamUrl.COMMUNITY_URL}/tradeoffer/{trade_offer_id}/accept'
         params = {
             'sessionid': session_id,
